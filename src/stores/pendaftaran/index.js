@@ -31,6 +31,8 @@ export const usePendaftaranStore = defineStore('pendaftaran', {
       if (this.form.peserta.length > 1) this.form.peserta.splice(index, 1)
     },
     async simpan(payload = this.form) {
+      if (this.saving) return null
+
       this.saving = true
       this.turnstileRejected = false
       try {

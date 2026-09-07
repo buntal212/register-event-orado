@@ -25,7 +25,7 @@
         </div>
       </section>
 
-      <q-form class="form-card" @submit="simpan">
+      <q-form class="form-card" @submit.prevent="simpan">
         <section class="form-section team-section">
           <div class="section-title">
             <span class="section-icon"><q-icon name="groups" /></span>
@@ -186,20 +186,21 @@
             <TurnstileWidget
               ref="turnstileWidget"
               :site-key="turnstileSiteKey"
-              @success="turnstileToken = $event"
-              @expired="resetTurnstile"
-              @error="resetTurnstile"
+              @success="terimaTokenTurnstile"
+              @expired="() => resetTurnstile('token-kedaluwarsa')"
+              @error="() => resetTurnstile('widget-error')"
             />
           </div>
           <q-btn
-              unelevated
-              no-caps
-              type="submit"
-              color="primary"
-              icon-right="arrow_forward"
-              :loading="store.saving"
-              label="Kirim Pendaftaran"
-            />
+            unelevated
+            no-caps
+            type="submit"
+            color="primary"
+            icon-right="arrow_forward"
+            :loading="isSubmitting"
+            :disable="isSubmitting || !turnstileToken"
+            label="Kirim Pendaftaran"
+          />
         </div>
       </q-form>
     </main>
@@ -221,6 +222,9 @@ const wajib = (pesan) => (nilai) => !!nilai || pesan
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
 const turnstileToken = ref('')
 const turnstileWidget = ref(null)
+const isSubmitting = ref(false)
+let submitSequence = 0
+let tokenSequence = 0
 const form = reactive({
   master_event_id: null,
   nama_tim: '',
@@ -242,23 +246,55 @@ const opsi = computed(() =>
   })),
 )
 onMounted(() => store.getEvents())
+
+function terimaTokenTurnstile(token) {
+  turnstileToken.value = token
+  tokenSequence += 1
+  console.info('[Turnstile Pendaftaran] Token dibuat', {
+    token_sequence: tokenSequence,
+    token_length: token.length,
+  })
+}
+
 async function simpan() {
+  if (isSubmitting.value) {
+    console.warn('[Turnstile Pendaftaran] Submit ganda diblokir')
+    return
+  }
+
   if (!turnstileToken.value) {
     Notify.create({ type: 'warning', message: 'Selesaikan verifikasi keamanan terlebih dahulu.' })
     return
   }
 
-  const data = await store.simpan({ ...form, turnstile_token: turnstileToken.value })
-  if (data) {
-    resetTurnstile()
-    router.push(`/cetak-bukti?kode=${data.kode_pendaftaran}`)
-  } else if (store.turnstileRejected) {
-    resetTurnstile()
+  isSubmitting.value = true
+  submitSequence += 1
+  const requestId = submitSequence
+  const token = turnstileToken.value
+
+  // Token Turnstile bersifat sekali pakai; kosongkan sebelum POST agar tidak mungkin terkirim ulang.
+  turnstileToken.value = ''
+  console.info('[Turnstile Pendaftaran] Submit dimulai', {
+    request_id: requestId,
+    token_sequence: tokenSequence,
+    token_length: token.length,
+  })
+
+  try {
+    const data = await store.simpan({ ...form, turnstile_token: token })
+    if (data) router.push(`/cetak-bukti?kode=${data.kode_pendaftaran}`)
+  } finally {
+    resetTurnstile('respons-selesai', requestId)
+    isSubmitting.value = false
   }
 }
 
-function resetTurnstile() {
+function resetTurnstile(reason, requestId = null) {
   turnstileToken.value = ''
+  console.info('[Turnstile Pendaftaran] Widget direset', {
+    reason,
+    request_id: requestId,
+  })
   turnstileWidget.value?.reset()
 }
 </script>
