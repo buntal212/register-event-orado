@@ -6,6 +6,7 @@ export const usePendaftaranStore = defineStore('pendaftaran', {
   state: () => ({
     loading: false,
     saving: false,
+    turnstileRejected: false,
     events: [],
     form: { master_event_id: null, nama_pendaftar: '', no_hp: '', email: '', peserta: [peserta()] },
   }),
@@ -29,16 +30,18 @@ export const usePendaftaranStore = defineStore('pendaftaran', {
     hapusPeserta(index) {
       if (this.form.peserta.length > 1) this.form.peserta.splice(index, 1)
     },
-    async simpan() {
+    async simpan(payload = this.form) {
       this.saving = true
+      this.turnstileRejected = false
       try {
-        const response = await api.post('/v3/event/pendaftaran', this.form)
+        const response = await api.post('/v3/event/pendaftaran', payload)
         Notify.create({
           type: 'positive',
           message: response.data?.message || 'Pendaftaran berhasil.',
         })
         return response.data?.data
       } catch (error) {
+        this.turnstileRejected = Boolean(error.response?.data?.errors?.turnstile_token)
         Notify.create({
           type: 'negative',
           message:

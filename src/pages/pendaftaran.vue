@@ -179,18 +179,27 @@
           </section>
         </div>
         <div class="submit-area">
-          <p>
-            <q-icon name="verified_user" /> Data akan diproses setelah Anda mengirim pendaftaran.
-          </p>
+          <div>
+            <p>
+              <q-icon name="verified_user" /> Data akan diproses setelah Anda mengirim pendaftaran.
+            </p>
+            <TurnstileWidget
+              ref="turnstileWidget"
+              :site-key="turnstileSiteKey"
+              @success="turnstileToken = $event"
+              @expired="resetTurnstile"
+              @error="resetTurnstile"
+            />
+          </div>
           <q-btn
-            unelevated
-            no-caps
-            type="submit"
-            color="primary"
-            icon-right="arrow_forward"
-            :loading="store.saving"
-            label="Kirim Pendaftaran"
-          />
+              unelevated
+              no-caps
+              type="submit"
+              color="primary"
+              icon-right="arrow_forward"
+              :loading="store.saving"
+              label="Kirim Pendaftaran"
+            />
         </div>
       </q-form>
     </main>
@@ -198,15 +207,20 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { Notify } from 'quasar'
 import { useRouter } from 'vue-router'
 import logoOrado from '../../../orado-pengurus/src/assets/orado/logo-white.svg'
+import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { usePendaftaranStore } from '@/stores/pendaftaran'
 
 const store = usePendaftaranStore()
 const router = useRouter()
 const gender = ['Laki-laki', 'Perempuan']
 const wajib = (pesan) => (nilai) => !!nilai || pesan
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
+const turnstileToken = ref('')
+const turnstileWidget = ref(null)
 const form = reactive({
   master_event_id: null,
   nama_tim: '',
@@ -229,9 +243,23 @@ const opsi = computed(() =>
 )
 onMounted(() => store.getEvents())
 async function simpan() {
-  store.form = form
-  const data = await store.simpan()
-  if (data) router.push(`/cetak-bukti?kode=${data.kode_pendaftaran}`)
+  if (!turnstileToken.value) {
+    Notify.create({ type: 'warning', message: 'Selesaikan verifikasi keamanan terlebih dahulu.' })
+    return
+  }
+
+  const data = await store.simpan({ ...form, turnstile_token: turnstileToken.value })
+  if (data) {
+    resetTurnstile()
+    router.push(`/cetak-bukti?kode=${data.kode_pendaftaran}`)
+  } else if (store.turnstileRejected) {
+    resetTurnstile()
+  }
+}
+
+function resetTurnstile() {
+  turnstileToken.value = ''
+  turnstileWidget.value?.reset()
 }
 </script>
 
@@ -438,6 +466,9 @@ async function simpan() {
 }
 .submit-area p .q-icon {
   color: #0871c8;
+}
+.submit-area :deep(.turnstile-widget) {
+  margin-top: 10px;
 }
 .submit-area .q-btn {
   min-height: 45px;
