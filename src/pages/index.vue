@@ -93,6 +93,20 @@
               <b>Cari bukti <q-icon name="arrow_forward" /></b>
             </div>
           </article>
+          <article
+            class="service-card"
+            tabindex="0"
+            @click="$router.push('/event')"
+            @keyup.enter="$router.push('/event')"
+          >
+            <span class="service-icon"><q-icon name="event" /></span>
+            <div>
+              <small>03</small>
+              <h3>List Event</h3>
+              <p>Lihat daftar event ORADO yang pendaftarannya sedang dibuka.</p>
+              <b>Lihat event <q-icon name="arrow_forward" /></b>
+            </div>
+          </article>
         </div>
       </section>
     </main>
@@ -105,7 +119,7 @@
 </template>
 
 <script setup>
-import logoOrado from '../../../orado-pengurus/src/assets/orado/logo-white.svg'
+import logoOrado from '@/assets/orado/logo-white.svg'
 
 const dominoDecorations = [
   { id: 1, style: { top: '6%', right: '9%', transform: 'rotate(19deg) scale(1.08)' } },

@@ -59,7 +59,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import logoOrado from '../../../orado-pengurus/src/assets/orado/logo-white.svg'
+import logoOrado from '@/assets/orado/logo-white.svg'
 import { useBuktiStore } from '@/stores/bukti'
 
 const store = useBuktiStore()

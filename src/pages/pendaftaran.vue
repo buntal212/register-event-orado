@@ -210,13 +210,14 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Notify } from 'quasar'
-import { useRouter } from 'vue-router'
-import logoOrado from '../../../orado-pengurus/src/assets/orado/logo-white.svg'
+import { useRoute, useRouter } from 'vue-router'
+import logoOrado from '@/assets/orado/logo-white.svg'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { usePendaftaranStore } from '@/stores/pendaftaran'
 
 const store = usePendaftaranStore()
 const router = useRouter()
+const route = useRoute()
 const gender = ['Laki-laki', 'Perempuan']
 const wajib = (pesan) => (nilai) => !!nilai || pesan
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || ''
@@ -245,7 +246,12 @@ const opsi = computed(() =>
     value: event.id,
   })),
 )
-onMounted(() => store.getEvents())
+onMounted(async () => {
+  await store.getEvents()
+
+  const eventId = Number(route.query.event)
+  if (store.events.some((event) => event.id === eventId)) form.master_event_id = eventId
+})
 
 function terimaTokenTurnstile(token) {
   turnstileToken.value = token
