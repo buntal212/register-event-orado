@@ -14,12 +14,15 @@
       <section class="intro no-print">
         <span class="eyebrow"><q-icon name="receipt_long" /> BUKTI PENDAFTARAN</span>
         <h1>Cetak bukti pendaftaran.</h1>
-        <p>Masukkan nomor registrasi untuk melihat dan mencetak bukti pendaftaran tim.</p>
+        <p>Masukkan nomor registrasi dan nomor HP pendaftar untuk melihat bukti pendaftaran tim.</p>
       </section>
 
       <q-form class="search-card no-print" @submit="store.tampilkan">
-        <q-input v-model.trim="store.kode" outlined dense label="Kode pendaftaran" :rules="[wajib]">
+        <q-input v-model.trim="store.kode" outlined dense label="Kode pendaftaran">
           <template #prepend><q-icon name="confirmation_number" color="primary" /></template>
+        </q-input>
+        <q-input v-model.trim="store.noHp" outlined dense label="Nomor HP pendaftar">
+          <template #prepend><q-icon name="phone" color="primary" /></template>
         </q-input>
         <q-btn
           unelevated
@@ -98,7 +101,7 @@
 
       <section v-else-if="!store.loading" class="empty-state no-print">
         <q-icon name="description" /><strong>Bukti pendaftaran akan tampil di sini.</strong
-        ><span>Masukkan kode seperti REG-00001 pada kolom di atas.</span>
+        ><span>Masukkan kode registrasi dan nomor HP pendaftar pada kolom di atas.</span>
       </section>
     </main>
   </q-page>
@@ -112,7 +115,6 @@ import { useBuktiStore } from '@/stores/bukti'
 
 const store = useBuktiStore()
 const route = useRoute()
-const wajib = (value) => !!value || 'Kode pendaftaran wajib diisi.'
 const detail = computed(() => store.data?.rincis?.[0] || {})
 const athletes = computed(() => [
   {
@@ -132,18 +134,28 @@ const tanggalHariIni = new Intl.DateTimeFormat('id-ID', {
   year: 'numeric',
 }).format(new Date())
 onMounted(() => {
-  if (route.query.kode) {
+  if (route.query.token) {
+    store.publicToken = String(route.query.token)
+    store.tampilkanDenganToken()
+  } else if (route.query.kode && route.query.no_hp) {
     store.kode = route.query.kode
+    store.noHp = route.query.no_hp
     store.tampilkan()
   }
 })
 function reset() {
   store.kode = ''
+  store.noHp = ''
+  store.publicToken = ''
   store.data = null
 }
 function cetak() {
+  const parameter = store.publicToken
+    ? `token=${encodeURIComponent(store.publicToken)}`
+    : `kode=${encodeURIComponent(store.data.kode_pendaftaran)}&no_hp=${encodeURIComponent(store.noHp)}`
+
   window.open(
-    `/cetak-bukti-print?kode=${encodeURIComponent(store.data.kode_pendaftaran)}`,
+    `/cetak-bukti-print?${parameter}`,
     '_blank',
   )
 }

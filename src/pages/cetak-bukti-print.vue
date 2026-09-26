@@ -90,8 +90,12 @@ const tanggalHariIni = new Intl.DateTimeFormat('id-ID', {
   year: 'numeric',
 }).format(new Date())
 onMounted(() => {
-  if (route.query.kode) {
+  if (route.query.token) {
+    store.publicToken = String(route.query.token)
+    store.tampilkanDenganToken()
+  } else if (route.query.kode && route.query.no_hp) {
     store.kode = route.query.kode
+    store.noHp = route.query.no_hp
     store.tampilkan()
   }
 })

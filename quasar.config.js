@@ -34,6 +34,7 @@ export default defineConfig((ctx) => {
     build: {
       env: {
         clientPrefix: 'VITE_',
+        file: ctx.dev ? [] : ['.env.production'],
       },
 
       target: {

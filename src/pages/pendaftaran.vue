@@ -288,7 +288,7 @@ async function simpan() {
 
   try {
     const data = await store.simpan({ ...form, turnstile_token: token })
-    if (data) router.push(`/cetak-bukti?kode=${data.kode_pendaftaran}`)
+    if (data) router.push(`/cetak-bukti?token=${encodeURIComponent(data.public_token)}`)
   } finally {
     resetTurnstile('respons-selesai', requestId)
     isSubmitting.value = false
